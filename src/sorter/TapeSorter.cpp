@@ -19,6 +19,7 @@ void TapeSorter::sort() {
     // means 1 file descriptor opened, and this value is capped on some platforms. When testing, i found that
     // on my system cap is 512 opened descriptors.
     // More info: https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/setmaxstdio?view=msvc-170
+
     size_t blockSize = config.memory_limit / sizeof(int32_t);
     std::vector<int> block;
     block.reserve(blockSize);
@@ -34,23 +35,31 @@ void TapeSorter::sort() {
         TempFileTape tape2{"tmp/tape_input2.bin", config};
         for (size_t i = 0; i < blockSize && input_tape.hasNext(); ++i) {
             block.push_back(input_tape.read());
+            tapeReadCount++;
             input_tape.shiftRight();
+            tapeShiftCount++;
         }
         std::sort(block.begin(), block.end());
 
         for (int num: block) {
             tape1.write(num);
+            tapeWriteCount++;
             tape1.shiftRight();
+            tapeShiftCount++;
         }
         block.clear();
         for (size_t i = 0; i < blockSize && input_tape.hasNext(); ++i) {
             block.push_back(input_tape.read());
+            tapeReadCount++;
             input_tape.shiftRight();
+            tapeShiftCount++;
         }
         std::sort(block.begin(), block.end());
         for (int num: block) {
             tape2.write(num);
+            tapeWriteCount++;
             tape2.shiftRight();
+            tapeShiftCount++;
         }
         block.clear();
 
@@ -87,47 +96,80 @@ void TapeSorter::mergeTwoTapes(Tape &tape1, Tape &tape2, Tape &resultTape) {
     tape1.rewind();
     tape2.rewind();
     resultTape.rewind();
+    tapeRewindCount+=3;
 
     bool has1 = tape1.hasNext();
     bool has2 = tape2.hasNext();
-    int val1 = has1 ? tape1.read() : 0;
-    int val2 = has2 ? tape2.read() : 0;
+    int val1=0, val2=0;
+    if (has1) {
+        val1 = tape1.read();
+        tapeReadCount++;
+    }
+    if (has2) {
+        val2 = tape2.read();
+        tapeReadCount++;
+    }
 
     while (has1 || has2) {
         if (has1 && has2) {
             if (val1 <= val2) {
                 resultTape.write(val1);
+                tapeWriteCount++;
                 tape1.shiftRight();
+                tapeShiftCount++;
                 has1 = tape1.hasNext();
-                if (has1) val1 = tape1.read();
+                if (has1) {
+                    val1 = tape1.read();
+                    tapeReadCount++;
+                }
             } else {
                 resultTape.write(val2);
+                tapeWriteCount++;
                 tape2.shiftRight();
+                tapeShiftCount++;
                 has2 = tape2.hasNext();
-                if (has2) val2 = tape2.read();
+                if (has2) {
+                    val2 = tape2.read();
+                    tapeReadCount++;
+                }
             }
         } else if (has1) {
             resultTape.write(val1);
+            tapeWriteCount++;
             tape1.shiftRight();
+            tapeShiftCount++;
             has1 = tape1.hasNext();
-            if (has1) val1 = tape1.read();
+            if (has1) {
+                val1 = tape1.read();
+                tapeReadCount++;
+            }
         } else {
             resultTape.write(val2);
+            tapeWriteCount++;
             tape2.shiftRight();
+            tapeShiftCount++;
             has2 = tape2.hasNext();
-            if (has2) val2 = tape2.read();
+            if (has2) {
+                val2 = tape2.read();
+                tapeReadCount++;
+            }
         }
         resultTape.shiftRight();
+        tapeShiftCount++;
     }
 }
 
 void TapeSorter::copyTape(Tape &src, Tape &dest) {
     src.rewind();
     dest.rewind();
+    tapeRewindCount+=2;
     while (src.hasNext()) {
         int val = src.read();
+        tapeReadCount++;
         dest.write(val);
+        tapeWriteCount++;
         dest.shiftRight();
         src.shiftRight();
+        tapeShiftCount+=2;
     }
 }

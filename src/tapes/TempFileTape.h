@@ -34,6 +34,8 @@ public:
         return position;
     }
 
+    int getSize() const { return size; }
+
 private:
     std::string filename;
     size_t position;

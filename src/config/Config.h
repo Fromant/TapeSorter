@@ -7,7 +7,7 @@ struct Config {
     int read_delay = 0;
     int write_delay = 0;
     int shift_delay = 0;
-    int rewind_delay_per_position = 0;
+    int rewind_delay = 0;
     int memory_limit = 0;
 
     /// Function to load config from provided filename

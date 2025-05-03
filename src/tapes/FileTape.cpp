@@ -27,7 +27,7 @@ int32_t FileTape::read() {
     int32_t value = 0;
     file.seekg(position * sizeof(int32_t));
     if (!file.read(reinterpret_cast<char *>(&value), sizeof(int32_t))) {
-        //TODO remove throw
+        //TODO remove throw on releases
         throw std::runtime_error("Read error at position " + std::to_string(position));
     }
     return value;

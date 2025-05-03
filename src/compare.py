@@ -71,7 +71,6 @@ def print_sample(items, max_samples=10):
         print(f"First {max_samples} samples: {items[:max_samples]}")
         print(f"(Plus {len(items)-max_samples} more...)")
 
-# Example usage
 input_file = '../cmake-build-debug/tape.bin'
 sorted_file = '../cmake-build-debug/sorted.bin'
 

@@ -3,8 +3,7 @@
 #include "config/Config.h"
 #include <iostream>
 
-int main(int argc, char* argv[]) {
-
+int main(int argc, char *argv[]) {
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0] << " <input file> <output file>\n";
         return 1;
@@ -22,10 +21,22 @@ int main(int argc, char* argv[]) {
         FileTape outputTape(argv[2], config);
         TapeSorter sorter(inputTape, outputTape, config);
         sorter.sort();
-    } catch (const std::exception& e) {
+
+        //print statistics
+        std::cout << "Done!\nInput file size: " << inputTape.getSize() << std::endl;
+        std::cout << "Rewind count: " << sorter.tapeRewindCount << std::endl;
+        std::cout << "Read count: " << sorter.tapeReadCount << std::endl;
+        std::cout << "Write count: " << sorter.tapeWriteCount << std::endl;
+        std::cout << "Shift count: " << sorter.tapeShiftCount << std::endl;
+        std::cout << "Total time: " << sorter.tapeReadCount * config.read_delay +
+                sorter.tapeWriteCount * config.write_delay +
+                sorter.tapeShiftCount * config.shift_delay +
+                sorter.tapeRewindCount * config.rewind_delay << std::endl;
+    } catch (const std::exception &e) {
         std::cerr << "Error: " << e.what() << "\n";
         return 1;
     }
+
 
     return 0;
 }
