@@ -1,18 +1,18 @@
 #include "FileTape.h"
 
-FileTape::FileTape(const std::string &filename, const Config &config, bool keepData)
+FileTape::FileTape(const std::string &filename, const Config &config)
     : filename(filename), position(0), config(config) {
     file.open(filename,
-              std::ios::in | std::ios::out | std::ios::binary | (keepData ? std::ios::openmode(0) : std::ios::trunc));
+              std::ios::in | std::ios::out | std::ios::binary);
     if (!file) {
         file.open(filename, std::ios::out);
         file.close();
         file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
         size = 0;
-    } else if (keepData) {
+    } else {
         file.seekg(0, std::ios::end);
-        size = file.tellg();
-    } else size = 0;
+        size = file.tellg() / sizeof(int32_t);
+    }
     if (!file) {
         throw std::runtime_error("Cannot open file " + filename);
     }
@@ -40,7 +40,7 @@ void FileTape::write(int32_t value) {
 
 void FileTape::shiftRight() {
     position++;
-    size = std::max(size, position * 4);
+    size = std::max(size, position);
 }
 
 void FileTape::shiftLeft() {
@@ -53,5 +53,5 @@ void FileTape::rewind() {
 }
 
 bool FileTape::hasNext() {
-    return position < size / 4;
+    return position < size;
 }

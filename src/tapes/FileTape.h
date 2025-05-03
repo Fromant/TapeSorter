@@ -12,7 +12,7 @@
 /// that std::fstream is opened and there's a limit of file descriptors opened for each process (512 on my windows)
 class FileTape : public Tape {
 public:
-    FileTape(const std::string &filename, const Config &config, bool keepData = true);
+    FileTape(const std::string &filename, const Config &config);
 
     ~FileTape() override;
 
@@ -34,6 +34,7 @@ public:
 
 private:
     std::string filename;
+    //position and size in int32_t elements
     size_t position;
     size_t size;
     std::fstream file;

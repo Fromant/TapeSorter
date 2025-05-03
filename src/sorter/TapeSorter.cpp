@@ -6,6 +6,7 @@
 
 #include "../tapes/FileTape.h"
 #include "../config/Config.h"
+#include "../tapes/TempFileTape.h"
 
 TapeSorter::TapeSorter(Tape &input, Tape &output, const Config &config)
     : input_tape(input), output_tape(output), config(config) {
@@ -29,8 +30,8 @@ void TapeSorter::sort() {
     // by merging 2 tapes on read we have 2+N/M/2 temp tapes instead of N/M temp tapes
     // therefore, we save 2*rewinding time when sorting. Pure win
     while (input_tape.hasNext()) {
-        FileTape tape1{"tmp/tape_input1.bin", config, false};
-        FileTape tape2{"tmp/tape_input2.bin", config, false};
+        TempFileTape tape1{"tmp/tape_input1.bin", config};
+        TempFileTape tape2{"tmp/tape_input2.bin", config};
         for (size_t i = 0; i < blockSize && input_tape.hasNext(); ++i) {
             block.push_back(input_tape.read());
             input_tape.shiftRight();
@@ -53,7 +54,7 @@ void TapeSorter::sort() {
         }
         block.clear();
 
-        FileTape resultTape{"tmp/tape" + std::to_string(this->temp_tapes++) + ".bin", config, false};
+        TempFileTape resultTape{"tmp/tape" + std::to_string(this->temp_tapes++) + ".bin", config};
 
         mergeTwoTapes(tape1, tape2, resultTape);
     }
@@ -66,11 +67,11 @@ void TapeSorter::sort() {
             if (i + 1 < tapes_before) {
                 FileTape tape1{"tmp/tape" + std::to_string(i) + ".bin", config};
                 FileTape tape2{"tmp/tape" + std::to_string(i + 1) + ".bin", config};
-                FileTape result{"tmp/tape" + std::to_string(temp_tapes++) + ".bin", config, false};
+                TempFileTape result{"tmp/tape" + std::to_string(temp_tapes++) + ".bin", config};
                 mergeTwoTapes(tape1, tape2, result);
             } else {
                 FileTape source{"tmp/tape" + std::to_string(i) + ".bin", config};
-                FileTape result{"tmp/tape" + std::to_string(temp_tapes++) + ".bin", config, false};
+                TempFileTape result{"tmp/tape" + std::to_string(temp_tapes++) + ".bin", config};
                 copyTape(source, result);
             }
         }
