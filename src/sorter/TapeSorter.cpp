@@ -76,13 +76,14 @@ void TapeSorter::sort() {
             if (i + 1 < tapes_before) {
                 FileTape tape1{"tmp/tape" + std::to_string(i) + ".bin", config};
                 FileTape tape2{"tmp/tape" + std::to_string(i + 1) + ".bin", config};
-                tapeRewindCount += 2;
+                fakeRewindTape(tape1);
+                fakeRewindTape(tape2);
                 TempFileTape result{"tmp/tape" + std::to_string(temp_tapes++) + ".bin", config};
                 //no need to rewind result tape as it's new temporary tape
                 mergeTapes(tape1, tape2, result);
             } else {
                 FileTape source{"tmp/tape" + std::to_string(i) + ".bin", config};
-                tapeRewindCount++;
+                fakeRewindTape(source);
                 TempFileTape result{"tmp/tape" + std::to_string(temp_tapes++) + ".bin", config};
                 //no need to rewind result tape as it's new temporary tape
                 copyTape(source, result);
@@ -95,11 +96,13 @@ void TapeSorter::sort() {
         //last two tape to be merged into result
         FileTape tape1{"tmp/tape" + std::to_string(merged) + ".bin", config};
         FileTape tape2{"tmp/tape" + std::to_string(merged + 1) + ".bin", config};
-        tapeRewindCount += 2;
+        fakeRewindTape(tape1);
+        fakeRewindTape(tape2);
         mergeTapes(tape1, tape2, output_tape);
     } else {
         //last tape to be copied into result
         FileTape result{"tmp/tape" + std::to_string(merged) + ".bin", config}; //get last tape
+        fakeRewindTape(result);
         copyTape(result, output_tape);
     }
 }
@@ -107,9 +110,8 @@ void TapeSorter::sort() {
 void TapeSorter::rewindTape(Tape &tape) {
     size_t pos = tape.getPosition();
     if (pos * config.shift_delay < config.rewind_delay) {
-        for (int i = 0; i < pos; i++)
-            tape.shiftLeft();
         tapeShiftCount += pos;
+        tape.rewind();
     } else {
         tape.rewind();
         tapeRewindCount++;
@@ -118,10 +120,8 @@ void TapeSorter::rewindTape(Tape &tape) {
 
 
 void TapeSorter::mergeTapes(Tape &tape1, Tape &tape2, Tape &resultTape) {
-    tape1.rewind();
-    tape2.rewind();
-    resultTape.rewind();
-    tapeRewindCount += 3;
+    rewindTape(tape1);
+    rewindTape(tape2);
 
     bool has1 = tape1.hasNext();
     bool has2 = tape2.hasNext();
@@ -252,7 +252,6 @@ void TapeSorter::mergeTapesBackwards(Tape &tape1, Tape &tape2, Tape &resultTape)
 
 
 void TapeSorter::copyTape(Tape &src, Tape &dest) {
-    tapeRewindCount += 2;
     while (src.hasNext()) {
         int val = src.read();
         tapeReadCount++;
@@ -263,3 +262,13 @@ void TapeSorter::copyTape(Tape &src, Tape &dest) {
         tapeShiftCount += 2;
     }
 }
+
+void TapeSorter::fakeRewindTape(FileTape &tape) {
+    size_t pos = tape.getSize();
+    if (pos * config.shift_delay < config.rewind_delay) {
+        tapeShiftCount += pos;
+    } else {
+        tapeRewindCount++;
+    }
+}
+

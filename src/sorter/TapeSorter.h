@@ -50,6 +50,13 @@ private:
     /// We shouldn't call rewind() if it's easier to shift n times to the tape's start
     /// @param tape Tape to perform rewind on
     void rewindTape(Tape &tape);
+
+    /// Exactly as rewindTape() method but does not actually rewind, only adds latency to stats
+    /// Also acts like tape's opened at it's end, does not take position into account
+    /// Smart rewinding:
+    /// We shouldn't call rewind() if it's easier to shift n times to the tape's start
+    /// @param tape Tape to count rewind latency on
+    void fakeRewindTape(FileTape &tape);
 };
 
 #endif // TAPE_SORTER_H
