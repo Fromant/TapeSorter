@@ -70,7 +70,7 @@ void TapeSorter::sort() {
 
     // merge sort all the tapes
     int merged = 0;
-    while (merged < temp_tapes - 1) {
+    while (merged < temp_tapes - 2) {
         int tapes_before = temp_tapes - merged;
         for (size_t i = 0; i < tapes_before; i += 2) {
             if (i + 1 < tapes_before) {
@@ -78,19 +78,30 @@ void TapeSorter::sort() {
                 FileTape tape2{"tmp/tape" + std::to_string(i + 1) + ".bin", config};
                 tapeRewindCount += 2;
                 TempFileTape result{"tmp/tape" + std::to_string(temp_tapes++) + ".bin", config};
+                //no need to rewind result tape as it's new temporary tape
                 mergeTapes(tape1, tape2, result);
             } else {
                 FileTape source{"tmp/tape" + std::to_string(i) + ".bin", config};
                 tapeRewindCount++;
                 TempFileTape result{"tmp/tape" + std::to_string(temp_tapes++) + ".bin", config};
+                //no need to rewind result tape as it's new temporary tape
                 copyTape(source, result);
             }
         }
         merged += tapes_before;
     }
 
-    FileTape result{"tmp/tape" + std::to_string(merged) + ".bin", config}; //get last tape
-    copyTape(result, output_tape);
+    if (temp_tapes - merged == 2) {
+        //last two tape to be merged into result
+        FileTape tape1{"tmp/tape" + std::to_string(merged) + ".bin", config};
+        FileTape tape2{"tmp/tape" + std::to_string(merged + 1) + ".bin", config};
+        tapeRewindCount += 2;
+        mergeTapes(tape1, tape2, output_tape);
+    } else {
+        //last tape to be copied into result
+        FileTape result{"tmp/tape" + std::to_string(merged) + ".bin", config}; //get last tape
+        copyTape(result, output_tape);
+    }
 }
 
 void TapeSorter::rewindTape(Tape &tape) {
@@ -107,7 +118,6 @@ void TapeSorter::rewindTape(Tape &tape) {
 
 
 void TapeSorter::mergeTapes(Tape &tape1, Tape &tape2, Tape &resultTape) {
-    //TODO move backwards if tape is in it's last pos
     tape1.rewind();
     tape2.rewind();
     resultTape.rewind();
@@ -242,8 +252,6 @@ void TapeSorter::mergeTapesBackwards(Tape &tape1, Tape &tape2, Tape &resultTape)
 
 
 void TapeSorter::copyTape(Tape &src, Tape &dest) {
-    src.rewind();
-    dest.rewind();
     tapeRewindCount += 2;
     while (src.hasNext()) {
         int val = src.read();

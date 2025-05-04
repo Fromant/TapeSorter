@@ -1,6 +1,6 @@
 Input file size: 1020
-Rewind count: 7
-Read count: 4080
-Write count: 4080
-Shift count: 8164
-Total time: 90464
+Rewind count: 5
+Read count: 3060
+Write count: 3060
+Shift count: 6124
+Total time: 67824
