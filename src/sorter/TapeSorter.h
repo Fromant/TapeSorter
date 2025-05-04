@@ -24,8 +24,11 @@ private:
 
     const Config &config;
 
-    void mergeTwoTapes(Tape &tape1, Tape &tape2, Tape &resultTape);
+    void mergeTapes(Tape &tape1, Tape &tape2, Tape &resultTape);
+    void mergeTapesBackwards(Tape &tape1, Tape &tape2, Tape &resultTape);
     void copyTape(Tape &src, Tape &dest);
+
+    void rewindTape(Tape &tape);
 };
 
 #endif // TAPE_SORTER_H

@@ -65,7 +65,7 @@ void TapeSorter::sort() {
 
         TempFileTape resultTape{"tmp/tape" + std::to_string(this->temp_tapes++) + ".bin", config};
 
-        mergeTwoTapes(tape1, tape2, resultTape);
+        mergeTapesBackwards(tape1, tape2, resultTape);
     }
 
     // merge sort all the tapes
@@ -76,10 +76,12 @@ void TapeSorter::sort() {
             if (i + 1 < tapes_before) {
                 FileTape tape1{"tmp/tape" + std::to_string(i) + ".bin", config};
                 FileTape tape2{"tmp/tape" + std::to_string(i + 1) + ".bin", config};
+                tapeRewindCount += 2;
                 TempFileTape result{"tmp/tape" + std::to_string(temp_tapes++) + ".bin", config};
-                mergeTwoTapes(tape1, tape2, result);
+                mergeTapes(tape1, tape2, result);
             } else {
                 FileTape source{"tmp/tape" + std::to_string(i) + ".bin", config};
+                tapeRewindCount++;
                 TempFileTape result{"tmp/tape" + std::to_string(temp_tapes++) + ".bin", config};
                 copyTape(source, result);
             }
@@ -91,16 +93,29 @@ void TapeSorter::sort() {
     copyTape(result, output_tape);
 }
 
-void TapeSorter::mergeTwoTapes(Tape &tape1, Tape &tape2, Tape &resultTape) {
+void TapeSorter::rewindTape(Tape &tape) {
+    size_t pos = tape.getPosition();
+    if (pos * config.shift_delay < config.rewind_delay) {
+        for (int i = 0; i < pos; i++)
+            tape.shiftLeft();
+        tapeShiftCount += pos;
+    } else {
+        tape.rewind();
+        tapeRewindCount++;
+    }
+}
+
+
+void TapeSorter::mergeTapes(Tape &tape1, Tape &tape2, Tape &resultTape) {
     //TODO move backwards if tape is in it's last pos
     tape1.rewind();
     tape2.rewind();
     resultTape.rewind();
-    tapeRewindCount+=3;
+    tapeRewindCount += 3;
 
     bool has1 = tape1.hasNext();
     bool has2 = tape2.hasNext();
-    int val1=0, val2=0;
+    int val1 = 0, val2 = 0;
     if (has1) {
         val1 = tape1.read();
         tapeReadCount++;
@@ -112,7 +127,7 @@ void TapeSorter::mergeTwoTapes(Tape &tape1, Tape &tape2, Tape &resultTape) {
 
     while (has1 || has2) {
         if (has1 && has2) {
-            if (val1 <= val2) {
+            if (val1 > val2) {
                 resultTape.write(val1);
                 tapeWriteCount++;
                 tape1.shiftRight();
@@ -159,10 +174,77 @@ void TapeSorter::mergeTwoTapes(Tape &tape1, Tape &tape2, Tape &resultTape) {
     }
 }
 
+void TapeSorter::mergeTapesBackwards(Tape &tape1, Tape &tape2, Tape &resultTape) {
+    size_t pos1 = tape1.getPosition();
+    size_t pos2 = tape2.getPosition();
+    tape1.shiftLeft();
+    tape2.shiftLeft();
+    tapeShiftCount += 2;
+
+    int val1 = 0, val2 = 0;
+    if (pos1 != -1) {
+        val1 = tape1.read();
+        tapeReadCount++;
+    }
+    if (pos2 != -1) {
+        val2 = tape2.read();
+        tapeReadCount++;
+    }
+
+    while (pos2 != -1 || pos1 != -1) {
+        if (pos1 != -1 && pos2 != -1) {
+            if (val1 > val2) {
+                resultTape.write(val1);
+                tapeWriteCount++;
+                tape1.shiftLeft();
+                tapeShiftCount++;
+                pos1 = tape1.getPosition();
+                if (pos1 != -1) {
+                    val1 = tape1.read();
+                    tapeReadCount++;
+                }
+            } else {
+                resultTape.write(val2);
+                tapeWriteCount++;
+                tape2.shiftLeft();
+                tapeShiftCount++;
+                pos2 = tape2.getPosition();
+                if (pos2 != -1) {
+                    val2 = tape2.read();
+                    tapeReadCount++;
+                }
+            }
+        } else if (pos1 != -1) {
+            resultTape.write(val1);
+            tapeWriteCount++;
+            tape1.shiftLeft();
+            tapeShiftCount++;
+            pos1 = tape1.getPosition();
+            if (pos1 != -1) {
+                val1 = tape1.read();
+                tapeReadCount++;
+            }
+        } else {
+            resultTape.write(val2);
+            tapeWriteCount++;
+            tape2.shiftLeft();
+            tapeShiftCount++;
+            pos2 = tape2.getPosition();
+            if (pos2 != -1) {
+                val2 = tape2.read();
+                tapeReadCount++;
+            }
+        }
+        resultTape.shiftRight();
+        tapeShiftCount++;
+    }
+}
+
+
 void TapeSorter::copyTape(Tape &src, Tape &dest) {
     src.rewind();
     dest.rewind();
-    tapeRewindCount+=2;
+    tapeRewindCount += 2;
     while (src.hasNext()) {
         int val = src.read();
         tapeReadCount++;
@@ -170,6 +252,6 @@ void TapeSorter::copyTape(Tape &src, Tape &dest) {
         tapeWriteCount++;
         dest.shiftRight();
         src.shiftRight();
-        tapeShiftCount+=2;
+        tapeShiftCount += 2;
     }
 }

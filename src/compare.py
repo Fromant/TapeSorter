@@ -9,7 +9,7 @@ def sort_and_compare_int32_files(input_path, sorted_path):
             if len(input_data) % 4 != 0:
                 print(f"Warning: Input file size {len(input_data)} is not multiple of 4")
             input_ints = struct.unpack(f'{len(input_data)//4}i', input_data)
-            sorted_ints = sorted(input_ints)
+            sorted_ints = sorted(input_ints, reverse=True)
 
         # Read the target sorted file
         with open(sorted_path, 'rb') as sorted_file:
