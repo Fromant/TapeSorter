@@ -23,20 +23,22 @@ void TapeSorter::sort() {
     std::vector<int> block;
     block.reserve(blockSize);
 
-
     input_tape.rewind();
+
+    int n = 0;
 
     // read and merge sort each 2*M (memory limit)
     // by merging 2 tapes on read we have 2+N/M/2 temp tapes instead of N/M temp tapes
     // therefore, we save 2*rewinding time when sorting. Pure win
     while (input_tape.hasNext()) {
-        FileTape tape1{"tmp/tape_input1.bin", config, true};
-        FileTape tape2{"tmp/tape_input2.bin", config, true};
+        FileTape tape1{"tmp/tape_input1.bin", true};
+        FileTape tape2{"tmp/tape_input2.bin", true};
         for (size_t i = 0; i < blockSize && input_tape.hasNext(); ++i) {
             block.push_back(input_tape.read());
             tapeReadCount++;
             input_tape.shiftRight();
             tapeShiftCount++;
+            n++;
         }
         std::sort(block.begin(), block.end());
 
@@ -62,125 +64,21 @@ void TapeSorter::sort() {
         }
         block.clear();
 
-        FileTape resultTape{"tmp/tape" + std::to_string(this->temp_tapes++) + ".bin", config, true};
+        FileTape resultTape{"tmp/tape" + std::to_string(this->temp_tapes++) + ".bin", true};
 
         mergeTapesBackwards(tape1, tape2, resultTape);
     }
 
-    // merge sort all the tapes
     int merged = 0;
-    while (merged < temp_tapes - 2) {
-        int tapes_before = temp_tapes - merged;
-        for (size_t i = 0; i < tapes_before; i += 2) {
-            if (i + 1 < tapes_before) {
-                FileTape tape1{"tmp/tape" + std::to_string(i) + ".bin", config, true};
-                FileTape tape2{"tmp/tape" + std::to_string(i + 1) + ".bin", config, true};
-                fakeRewindTape(tape1);
-                fakeRewindTape(tape2);
-                FileTape result{"tmp/tape" + std::to_string(temp_tapes++) + ".bin", config, true};
-                //no need to rewind result tape as it's new temporary tape
-                mergeTapes(tape1, tape2, result);
-            } else {
-                FileTape source{"tmp/tape" + std::to_string(i) + ".bin", config};
-                fakeRewindTape(source);
-                FileTape result{"tmp/tape" + std::to_string(temp_tapes++) + ".bin", config, true};
-                //no need to rewind result tape as it's new temporary tape
-                copyTape(source, result);
-            }
-        }
-        merged += tapes_before;
+    const int k = static_cast<int>(config.memory_limit / sizeof(int32_t));
+    while (merged < temp_tapes - k - 1) {
+        auto tape = FileTape("tmp/tape" + std::to_string(temp_tapes) + ".bin");
+        k_way_sort(merged, tape);
+        temp_tapes++;
     }
 
-    if (temp_tapes - merged == 2) {
-        //last two tape to be merged into result
-        FileTape tape1{"tmp/tape" + std::to_string(merged) + ".bin", config};
-        FileTape tape2{"tmp/tape" + std::to_string(merged + 1) + ".bin", config};
-        fakeRewindTape(tape1);
-        fakeRewindTape(tape2);
-        mergeTapes(tape1, tape2, output_tape);
-    } else {
-        //last tape to be copied into result
-        FileTape result{"tmp/tape" + std::to_string(merged) + ".bin", config}; //get last tape
-        fakeRewindTape(result);
-        copyTape(result, output_tape);
-    }
-}
-
-void TapeSorter::rewindTape(Tape &tape) {
-    size_t pos = tape.getPosition();
-    if (pos * config.shift_delay < config.rewind_delay) {
-        tapeShiftCount += pos;
-        tape.rewind();
-    } else {
-        tape.rewind();
-        tapeRewindCount++;
-    }
-}
-
-
-void TapeSorter::mergeTapes(Tape &tape1, Tape &tape2, Tape &resultTape) {
-    rewindTape(tape1);
-    rewindTape(tape2);
-
-    bool has1 = tape1.hasNext();
-    bool has2 = tape2.hasNext();
-    int val1 = 0, val2 = 0;
-    if (has1) {
-        val1 = tape1.read();
-        tapeReadCount++;
-    }
-    if (has2) {
-        val2 = tape2.read();
-        tapeReadCount++;
-    }
-
-    while (has1 || has2) {
-        if (has1 && has2) {
-            if (val1 > val2) {
-                resultTape.write(val1);
-                tapeWriteCount++;
-                tape1.shiftRight();
-                tapeShiftCount++;
-                has1 = tape1.hasNext();
-                if (has1) {
-                    val1 = tape1.read();
-                    tapeReadCount++;
-                }
-            } else {
-                resultTape.write(val2);
-                tapeWriteCount++;
-                tape2.shiftRight();
-                tapeShiftCount++;
-                has2 = tape2.hasNext();
-                if (has2) {
-                    val2 = tape2.read();
-                    tapeReadCount++;
-                }
-            }
-        } else if (has1) {
-            resultTape.write(val1);
-            tapeWriteCount++;
-            tape1.shiftRight();
-            tapeShiftCount++;
-            has1 = tape1.hasNext();
-            if (has1) {
-                val1 = tape1.read();
-                tapeReadCount++;
-            }
-        } else {
-            resultTape.write(val2);
-            tapeWriteCount++;
-            tape2.shiftRight();
-            tapeShiftCount++;
-            has2 = tape2.hasNext();
-            if (has2) {
-                val2 = tape2.read();
-                tapeReadCount++;
-            }
-        }
-        resultTape.shiftRight();
-        tapeShiftCount++;
-    }
+    //final merge
+    k_way_sort(merged, output_tape);
 }
 
 void TapeSorter::mergeTapesBackwards(Tape &tape1, Tape &tape2, Tape &resultTape) {
@@ -249,24 +147,88 @@ void TapeSorter::mergeTapesBackwards(Tape &tape1, Tape &tape2, Tape &resultTape)
     }
 }
 
+void TapeSorter::rewindTape(Tape &tape) {
+    auto pos = tape.getPosition();
+    if (pos * config.shift_delay < config.rewind_delay) tapeShiftCount += pos;
+    else tapeRewindCount++;
 
-void TapeSorter::copyTape(Tape &src, Tape &dest) {
-    while (src.hasNext()) {
-        int val = src.read();
-        tapeReadCount++;
-        dest.write(val);
-        tapeWriteCount++;
-        dest.shiftRight();
-        src.shiftRight();
-        tapeShiftCount += 2;
-    }
+    tape.rewind();
 }
 
-void TapeSorter::fakeRewindTape(FileTape &tape) {
-    size_t pos = tape.getSize();
-    if (pos * config.shift_delay < config.rewind_delay) {
-        tapeShiftCount += pos;
-    } else {
-        tapeRewindCount++;
+
+/// Simple max function that return index of max value of given vector
+/// @param v std::vector<int> to get maximum value of
+/// @return Pair of index and value of maximum element in vector.
+std::pair<size_t, int> min(const std::vector<int> &v) {
+    int min = INT_MAX;
+    size_t tr = 0;
+    for (int i = 0; i < v.size(); i++) {
+        if (v[i] < min) {
+            min = v[i];
+            tr = i;
+        }
     }
+
+    return {tr, min};
+}
+
+/// Function that sorts all temp tapes created
+/// Result goes into new temporary tape or final output tape
+/// @param merged_tapes amount of tapes already merged
+void TapeSorter::k_way_sort(int &merged_tapes, Tape &output) {
+    // we are limited in ram so we're having M/4-way merge sort here
+    // in other words, K=M/4 since sizeof(int32)=4
+    // Don't forget to limit number of tapes to sort
+    const int K = std::min(temp_tapes - merged_tapes, static_cast<int>(config.memory_limit / sizeof(int32_t)));
+
+    //Open all tapes
+    std::vector<FileTape> tapes;
+    tapes.reserve(K);
+    for (int j = merged_tapes; j < K + merged_tapes; j++) {
+        tapes.emplace_back("tmp/tape" + std::to_string(j) + ".bin", false);
+        //assume that tape was closed at it's end
+        tapes[j].setPosition(tapes[j].getSize() - 1);
+        tapeShiftCount++;
+    }
+
+    //Vector for memorizing all current values in tapes by their index.
+    std::vector<int32_t> values;
+    values.reserve(K);
+
+    int tapes_merged_in_batch = 0;
+
+    //read first values
+    for (int j = merged_tapes; j < K; j++) {
+        if (!tapes[j].hasPrev()) {
+            //tape already merged
+            values.emplace_back(INT_MIN);
+            tapes_merged_in_batch++;
+            continue;
+        }
+        values.emplace_back(tapes[j].read());
+        tapeReadCount++;
+        tapes[j].shiftLeft();
+        tapeShiftCount++;
+    }
+
+    while (tapes_merged_in_batch < K) {
+        auto max_value = min(values);
+
+        output.write(max_value.second);
+        output.shiftRight();
+        tapeWriteCount++;
+        tapeShiftCount++;
+
+        if (tapes[max_value.first].getPosition() == -1) {
+            tapes_merged_in_batch++;
+            values[max_value.first] = INT_MAX;
+        } else {
+            values[max_value.first] = tapes[max_value.first].read();
+            tapes[max_value.first].shiftLeft();
+            tapeShiftCount++;
+            tapeReadCount++;
+        }
+    }
+
+    merged_tapes += K;
 }

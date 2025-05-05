@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-FileTape::FileTape(const std::string &filename, const Config &config, bool isNew)
-    : filename(filename), position(0), config(config) {
+FileTape::FileTape(const std::string &filename, bool isNew)
+    : filename(filename), position(0) {
     file.open(filename,
               std::ios::in | std::ios::out | std::ios::binary | (isNew ? std::ios::trunc : (std::ios::openmode) 0));
     if (!file) {
@@ -32,7 +32,7 @@ int32_t FileTape::read() {
     if (!file.read(reinterpret_cast<char *>(&value), sizeof(int32_t))) {
         std::cerr << "Failed reading at position " << std::to_string(position) << " of " << size << ". Filename: "
                 << filename << std::endl;
-        exit(-1);
+        // exit(-1);
     }
     return value;
 }
@@ -57,4 +57,8 @@ void FileTape::rewind() {
 
 bool FileTape::hasNext() {
     return position < size;
+}
+
+bool FileTape::hasPrev() {
+    return position > 0;
 }

@@ -10,6 +10,7 @@ public:
     virtual void shiftLeft() = 0;
     virtual void rewind() = 0;
     virtual bool hasNext() = 0;
+    virtual bool hasPrev() = 0;
     virtual int getPosition() = 0;
 };
 

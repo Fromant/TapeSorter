@@ -4,6 +4,7 @@
 
 #include "../tapes/FileTape.h"
 #include "../tapes/Tape.h"
+#include "../config/Config.h"
 
 
 class TapeSorter {
@@ -26,37 +27,19 @@ private:
 
     const Config &config;
 
-    /// Merge 2 tape while sorting their contents (without locating data in RAM)
-    /// Does not rewind tapes and goes from where they're positioned to their end
-    /// @param tape1 First tape to source from
-    /// @param tape2 Second tape to source from
-    /// @param resultTape Tape where results will go
-    void mergeTapes(Tape &tape1, Tape &tape2, Tape &resultTape);
-
-    /// Exactly the same as mergeTapes() but works from end of tape
+    /// Merge tapes from where they are (intended as end of tape) to their start
     /// @param tape1 First tape to source from
     /// @param tape2 Second tape to source from
     /// @param resultTape Tape where results will go
     void mergeTapesBackwards(Tape &tape1, Tape &tape2, Tape &resultTape);
 
 
-    /// Copies tape from where it's positioned to the end to other tape
-    /// No rewinding here
-    /// @param src Tape to copy from
-    /// @param dest Copy destination
-    void copyTape(Tape &src, Tape &dest);
-
     /// Smart rewinding:
     /// We shouldn't call rewind() if it's easier to shift n times to the tape's start
     /// @param tape Tape to perform rewind on
     void rewindTape(Tape &tape);
 
-    /// Exactly as rewindTape() method but does not actually rewind, only adds latency to stats
-    /// Also acts like tape's opened at it's end, does not take position into account
-    /// Smart rewinding:
-    /// We shouldn't call rewind() if it's easier to shift n times to the tape's start
-    /// @param tape Tape to count rewind latency on
-    void fakeRewindTape(FileTape &tape);
+    void k_way_sort(int &merged_tapes, Tape& output);
 };
 
 #endif // TAPE_SORTER_H

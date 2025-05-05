@@ -5,7 +5,6 @@
 #include <fstream>
 
 #include "Tape.h"
-#include "../config/Config.h"
 
 /// File tape class, extends Tape interface.
 /// Make sure you don't have too much of this created, because of each of them means
@@ -14,9 +13,26 @@ class FileTape : public Tape {
 public:
     /// Constructor :D
     /// @param filename filename where tape is be located in
-    /// @param config config
     /// @param isNew if true, opens file truncating contents
-    FileTape(const std::string &filename, const Config &config, bool isNew = false);
+    explicit FileTape(const std::string &filename, bool isNew = false);
+
+    //move constructor and assignment for std::vector since std::fstream explicitly deletes them
+    FileTape(FileTape &&other) noexcept {
+        filename = other.filename;
+        position = other.position;
+        size = other.size;
+        other.file.close();
+        file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
+    }
+    FileTape &operator=(FileTape &&other) noexcept {
+        filename = other.filename;
+        position = other.position;
+        size = other.size;
+        other.file.close();
+        file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
+
+        return *this;
+    }
 
     ~FileTape() override;
 
@@ -32,9 +48,13 @@ public:
 
     bool hasNext() override;
 
+    bool hasPrev() override;
+
     int getPosition() override {
         return position;
     }
+
+    void setPosition(size_t pos) { position = pos; }
 
     int getSize() const { return size; }
 
@@ -44,7 +64,6 @@ private:
     size_t position;
     size_t size;
     std::fstream file;
-    const Config &config;
 };
 
 
