@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
 
     try {
         FileTape inputTape(argv[1], config);
-        FileTape outputTape(argv[2], config);
+        FileTape outputTape(argv[2], config, true);
         TapeSorter sorter(inputTape, outputTape, config);
         sorter.sort();
 

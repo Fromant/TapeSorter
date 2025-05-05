@@ -11,5 +11,4 @@ add_executable(TapeSorter src/main.cpp
         src/config/Config.cpp
         src/sorter/TapeSorter.h
         src/sorter/TapeSorter.cpp
-        src/tapes/TempFileTape.cpp
-        src/tapes/TempFileTape.h)
+)

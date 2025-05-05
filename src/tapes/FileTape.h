@@ -12,7 +12,11 @@
 /// that std::fstream is opened and there's a limit of file descriptors opened for each process (512 on my windows)
 class FileTape : public Tape {
 public:
-    FileTape(const std::string &filename, const Config &config);
+    /// Constructor :D
+    /// @param filename filename where tape is be located in
+    /// @param config config
+    /// @param isNew if true, opens file truncating contents
+    FileTape(const std::string &filename, const Config &config, bool isNew = false);
 
     ~FileTape() override;
 

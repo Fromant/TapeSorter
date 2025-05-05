@@ -1,18 +1,21 @@
 #include "FileTape.h"
 
-FileTape::FileTape(const std::string &filename, const Config &config)
+#include <iostream>
+
+FileTape::FileTape(const std::string &filename, const Config &config, bool isNew)
     : filename(filename), position(0), config(config) {
     file.open(filename,
-              std::ios::in | std::ios::out | std::ios::binary);
+              std::ios::in | std::ios::out | std::ios::binary | (isNew ? std::ios::trunc : (std::ios::openmode) 0));
     if (!file) {
         file.open(filename, std::ios::out);
         file.close();
         file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
         size = 0;
-    } else {
+    } else if (!isNew) {
         file.seekg(0, std::ios::end);
         size = file.tellg() / sizeof(int32_t);
-    }
+    } else size = 0;
+
     if (!file) {
         throw std::runtime_error("Cannot open file " + filename);
     }
@@ -27,8 +30,9 @@ int32_t FileTape::read() {
     int32_t value = 0;
     file.seekg(position * sizeof(int32_t));
     if (!file.read(reinterpret_cast<char *>(&value), sizeof(int32_t))) {
-        //TODO remove throw on releases
-        throw std::runtime_error("Read error at position " + std::to_string(position));
+        std::cerr << "Failed reading at position " << std::to_string(position) << " of " << size << ". Filename: "
+                << filename << std::endl;
+        exit(-1);
     }
     return value;
 }
@@ -44,7 +48,6 @@ void FileTape::shiftRight() {
 }
 
 void FileTape::shiftLeft() {
-    if (position == 0) return;
     position--;
 }
 
