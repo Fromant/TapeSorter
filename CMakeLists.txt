@@ -1,18 +1,17 @@
 cmake_minimum_required(VERSION 3.30)
 project(TapeSorter)
 
+add_subdirectory(src)
+
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(TapeSorter
-        src/tapes/Tape.h
-        src/tapes/FileTape.cpp
-        src/tapes/FileTape.h
-        src/config/Config.h
-        src/config/Config.cpp
-        src/sorter/TapeSorter.h
-        src/sorter/TapeSorter.cpp
-        tests/tests.cpp
+        TapeSorter.cpp
 )
+
+target_link_libraries(TapeSorter PRIVATE TapeSorterLib)
+
+enable_testing()
 
 #install gtest for testing
 include(FetchContent)
@@ -24,5 +23,9 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
-target_link_libraries(TapeSorter PRIVATE gtest_main)
+add_executable(TapeSorterTests tests/tests.cpp)
+
+target_link_libraries(TapeSorterTests PRIVATE gtest_main TapeSorterLib)
+
+
 
