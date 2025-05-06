@@ -32,7 +32,7 @@ int32_t FileTape::read() {
     if (!file.read(reinterpret_cast<char *>(&value), sizeof(int32_t))) {
         std::cerr << "Failed reading at position " << std::to_string(position) << " of " << size << ". Filename: "
                 << filename << std::endl;
-        // exit(-1);
+        exit(-1);
     }
     return value;
 }

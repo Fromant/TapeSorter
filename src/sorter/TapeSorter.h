@@ -2,7 +2,6 @@
 #define TAPE_SORTER_H
 
 
-#include "../tapes/FileTape.h"
 #include "../tapes/Tape.h"
 #include "../config/Config.h"
 
@@ -32,7 +31,6 @@ private:
     /// @param tape2 Second tape to source from
     /// @param resultTape Tape where results will go
     void mergeTapesBackwards(Tape &tape1, Tape &tape2, Tape &resultTape);
-
 
     /// Smart rewinding:
     /// We shouldn't call rewind() if it's easier to shift n times to the tape's start

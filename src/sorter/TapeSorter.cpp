@@ -82,10 +82,10 @@ void TapeSorter::sort() {
 }
 
 void TapeSorter::mergeTapesBackwards(Tape &tape1, Tape &tape2, Tape &resultTape) {
-    size_t pos1 = tape1.getPosition();
-    size_t pos2 = tape2.getPosition();
     tape1.shiftLeft();
     tape2.shiftLeft();
+    size_t pos1 = tape1.getPosition();
+    size_t pos2 = tape2.getPosition();
     tapeShiftCount += 2;
 
     int val1 = 0, val2 = 0;
@@ -187,6 +187,7 @@ void TapeSorter::k_way_sort(int &merged_tapes, Tape &output) {
     for (int j = merged_tapes; j < K + merged_tapes; j++) {
         tapes.emplace_back("tmp/tape" + std::to_string(j) + ".bin", false);
         //assume that tape was closed at it's end
+        if (tapes[j].getSize() == 0) continue;
         tapes[j].setPosition(tapes[j].getSize() - 1);
         tapeShiftCount++;
     }
@@ -199,12 +200,6 @@ void TapeSorter::k_way_sort(int &merged_tapes, Tape &output) {
 
     //read first values
     for (int j = merged_tapes; j < K; j++) {
-        if (!tapes[j].hasPrev()) {
-            //tape already merged
-            values.emplace_back(INT_MIN);
-            tapes_merged_in_batch++;
-            continue;
-        }
         values.emplace_back(tapes[j].read());
         tapeReadCount++;
         tapes[j].shiftLeft();
